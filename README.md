@@ -34,7 +34,7 @@ A simple but robust **user login system** written in Kotlin. This console-based 
   }
 ]
 ```
-	5.	Run the app. Use admin as both username and password to log in.
+5.	Run the app. Use admin as both username and password to log in.
 
 ⸻
 
