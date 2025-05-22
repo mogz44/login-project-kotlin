@@ -1,5 +1,5 @@
 # login-project-kotlin
-A simple but robust **user login system** written in Kotlin. This console-based project supports **username/password authentication**, **admin-only features**, and stores all data in a local JSON file.
+A simple but robust **user login system** written in Kotlin. This console-based project supports **username/password authentication**, **features for only admins or users**, **hashing passwords** and stores all data in a local JSON file.
 
 ---
 
