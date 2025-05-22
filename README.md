@@ -6,15 +6,18 @@ A simple but robust **user login system** written in Kotlin. This console-based 
 ## 🔑 Features
 
 - **User login** with username and password
+- **Hashed Passwords**
 - **Role-based access** (`admin` and `user`)
 - **Admin panel**:
   - View all users
   - Add users
   - Remove users
+  - Change users' passwords
 - Prevents:
   - Duplicate usernames
   - Deleting the currently logged-in account
 - Clean console interaction with basic input validation
+- Clean code for easily read
 
 ---
 
