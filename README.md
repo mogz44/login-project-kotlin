@@ -9,6 +9,7 @@ A simple but robust **user login system** written in Kotlin. This console-based 
 - **User login** with username and password
 - **Hashed passwords**
 - **Role-based access** (`admin` and `user`)
+- **Logging user actions** such as login, logout, and password changes
 - **Admin panel**:
   - View all users
   - Add users
@@ -43,5 +44,6 @@ A simple but robust **user login system** written in Kotlin. This console-based 
 ⸻
 
 ## 📌 Notes
--	Users with the user role can log in, but only admins access the control panel.
+-	User actions like login, logout, and password changes are now logged to logs/log.txt for audit and tracking purposes.
+- Logs include timestamps and usernames for better traceability.
 -	All data is stored in a flat JSON file — no database required.
