@@ -6,6 +6,8 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.File
 import java.security.MessageDigest
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Serializable
 data class User(
@@ -13,6 +15,7 @@ data class User(
     var password: String,
     val auth: String
 )
+
 
 fun main() {
     val file = File("data/users.json")
@@ -23,22 +26,23 @@ fun main() {
         val users = Json.decodeFromString<List<User>>(content)
         print("Username:")
         val inputUsername = readln()
-        val logUser = users.find { it.username == inputUsername }
-        if (logUser == null) {
+        val currentUser = users.find { it.username == inputUsername }
+        if (currentUser == null) {
             returnFun("❌ No such user found.", "quit")
         } else {
             print("Password:")
             val inputPassword = readln().trim()
             val inputPasswordHash = hashPasswd(inputPassword)
-            if (logUser.password == inputPasswordHash) {
+            if (currentUser.password == inputPasswordHash) {
                 println("Welcome to the System.")
-                println("Your authentication is ${logUser.auth}")
-                if (logUser.auth == "admin") {
-                    adminMenu(users, file, logUser)
+                println("Your authentication is ${currentUser.auth}")
+                if (currentUser.auth == "admin") {
+                    log("${currentUser.username}(${currentUser.auth}) logged in successfully")
+                    adminMenu(file, currentUser)
                     return
                 } else {
-                    println("Hi ${logUser.username} \uD83D\uDC64")
-                    userMenu(logUser, file)
+                    println("Hi ${currentUser.username} \uD83D\uDC64")
+                    userMenu(currentUser, file)
 
                 }
             } else {
@@ -48,10 +52,13 @@ fun main() {
     }
 }
 
-fun adminMenu(user: List<User>, file: File, currentUser: User) {
+//region Menus
+
+fun adminMenu(file: File, currentUser: User) {
     println("----------------------------")
     println("\uD83D\uDC64 Welcome to your admin panel.")
-    while (true) {
+    var i = true
+    while (i) {
         val content = file.readText()
         val user = Json.decodeFromString<List<User>>(content)
         println("----------------------------")
@@ -61,10 +68,14 @@ fun adminMenu(user: List<User>, file: File, currentUser: User) {
         val adminSel = readln().toIntOrNull()
         when (adminSel) {
             1 -> printUsers(user)
-            2 -> addUser(user, file)
+            2 -> addUser(user, file, currentUser)
             3 -> removeUser(user, file, currentUser)
-            4 -> adminPasswdChange(user, file, currentUser)
-            0 -> break
+            4 -> adminPasswdChange(file, currentUser)
+            0 -> run {
+                log("${currentUser.username}(${currentUser.auth}) logged out")
+                i = false
+            }
+
             null -> run {
                 returnFun("❌ You can't select any option except numbers between 0-4", "return to main menu")
             }
@@ -76,9 +87,8 @@ fun adminMenu(user: List<User>, file: File, currentUser: User) {
 fun userMenu(currentUser: User, file: File) {
     println("----------------------------")
     println("\uD83D\uDC64 Welcome to your user panel.")
-    while (true) {
-        val content = file.readText()
-        val user = Json.decodeFromString<List<User>>(content)
+    var i = true
+    while (i) {
         println("----------------------------")
         println("Password Change: 1 \n Quit: 0")
         println("----------------------------")
@@ -86,7 +96,11 @@ fun userMenu(currentUser: User, file: File) {
         val adminSel = readln().toIntOrNull()
         when (adminSel) {
             1 -> userPasswdChange(file, currentUser)
-            0 -> break
+            0 -> run {
+                log("${currentUser.username}(${currentUser.auth}) logged out")
+                i = false
+            }
+
             null -> run {
                 returnFun("❌ You can't select any option except numbers between 0-3", "return to menu")
             }
@@ -95,14 +109,22 @@ fun userMenu(currentUser: User, file: File) {
     returnFun("Quitting from the system...", "quit")
 }
 
-fun adminPasswdChange(user: List<User>, file: File, currentUser: User) {
+//endregion
+
+//region Admin Operations
+
+fun adminPasswdChange(file: File, currentUser: User) {
     val content = file.readText()
     val user = Json.decodeFromString<List<User>>(content)
-    print("Change your password: 1 \n Change password anyone else: 2 \n Quit: 0")
+    println("Change your password: 1 \n Change password anyone else: 2 \n Quit: 0")
+    println("----------------------------")
+    print("What do you want to do:")
     val selection = readln().toIntOrNull()
     if (selection == 0) return
-    if (selection == 1) userPasswdChange(file, currentUser)
-    if (selection == 2) {
+    else if (selection == 1) run {
+        userPasswdChange(file, currentUser)
+    }
+    else if (selection == 2) {
         println("Users: \n ${printUsers(user)}")
         print("Please enter the index number of user that you want to change password:")
         val choice = readln().toIntOrNull()
@@ -124,6 +146,7 @@ fun adminPasswdChange(user: List<User>, file: File, currentUser: User) {
                         val updatedJson = Json.encodeToString(updatedList)
                         file.writeText(updatedJson)
                         println("\uD83D\uDD04 Changes saved successfully.")
+                        log("${currentUser.username}(${currentUser.auth}) changed password for user ${choiceJson.username}(${choiceJson.auth})")
                     } else {
                         returnFun("❌ Passwords are not matching. Please try again...", "return to menu")
                     }
@@ -139,10 +162,12 @@ fun adminPasswdChange(user: List<User>, file: File, currentUser: User) {
         } else {
             returnFun("❌ User index can't be null. Please try again...", "return to menu")
         }
-    } else returnFun("❌ You can't select any option except numbers between 0-2", "return to menu")
+    } else {
+        returnFun("❌ You can't select any option except numbers between 0-2", "return to menu")
+    }
 }
 
-fun printUsers(user: List<User>): Unit {
+fun printUsers(user: List<User>) {
     user.forEachIndexed { index, user ->
         val baseInfo =
             "${index + 1} - Username: ${user.username}, Password is hashed \uD83D\uDEE1\uFE0F, Auth: ${user.auth}"
@@ -150,7 +175,7 @@ fun printUsers(user: List<User>): Unit {
     }
 }
 
-fun addUser(user: List<User>, file: File): Unit {
+fun addUser(user: List<User>, file: File, currentUser: User) {
     val mutableList = user.toMutableList()
     print("Enter username of the user that you want to add:")
     val newUsername = readLine()
@@ -164,14 +189,14 @@ fun addUser(user: List<User>, file: File): Unit {
                 val newPasswordHash = hashPasswd(newPassword)
                 if (newPassword.length >= 6) {
                     print("Enter auth of the user that you want to add[admin/user]:")
-                    val newAuth = readln().lowercase().toString()
+                    val newAuth = readln().lowercase()
                     if (newAuth == "admin" || newAuth == "user") {
                         val newUser = User(newUsername, newPasswordHash, newAuth)
                         mutableList.add(newUser)
                         val updatedJson = Json.encodeToString(mutableList)
                         file.writeText(updatedJson)
-
                         println("\uD83D\uDD04 Changes saved successfully.")
+                        log("${currentUser.username}(${currentUser.auth}) Added user: ${newUser.username}(${newUser.auth})")
                     } else {
                         returnFun("❌ Auth can't be null or anything except admin and user.", "return to menu")
                     }
@@ -188,7 +213,7 @@ fun addUser(user: List<User>, file: File): Unit {
 
 }
 
-fun removeUser(user: List<User>, file: File, currentUser: User): Unit {
+fun removeUser(user: List<User>, file: File, currentUser: User) {
     val mutableList = user.toMutableList()
     println("Users:")
     printUsers(user)
@@ -206,6 +231,7 @@ fun removeUser(user: List<User>, file: File, currentUser: User): Unit {
             val updatedJson = Json.encodeToString(mutableList)
             file.writeText(updatedJson)
             println("\uD83D\uDD04 Changes saved successfully.")
+            log("${currentUser.username}(${currentUser.auth}) Removed user: ${removedUser.username}")
         } else {
             returnFun("❌ User index can't be in any index except between ${1..user.size}", "return to menu")
         }
@@ -214,28 +240,34 @@ fun removeUser(user: List<User>, file: File, currentUser: User): Unit {
     }
 }
 
-fun userPasswdChange(file: File, logUser: User): Unit {
+//endregion
+
+//region User Operations
+
+fun userPasswdChange(file: File, currentUser: User) {
     val content = file.readText()
     val user = Json.decodeFromString<List<User>>(content)
     print("Please enter your current password:")
     val currentPass = readLine()
     if (currentPass != null) {
         val currentPassHash = hashPasswd(currentPass)
-        if (currentPassHash == logUser.password) {
+        if (currentPassHash == currentUser.password) {
             print("Please enter your new password:")
             val newPassFirst = readLine()
             if (newPassFirst != null) {
                 print("Please enter your new password again:")
                 val newPassSec = readLine()
                 if (newPassFirst == newPassSec) {
-                    logUser.password = newPassSec
+                    val newPassHash = hashPasswd(newPassSec)
+                    currentUser.password = newPassHash
                     val updatedList = user.map {
-                        if (it.username == logUser.username) it.copy(password = hashPasswd(logUser.password))
+                        if (it.username == currentUser.username) it.copy(password = newPassHash)
                         else it
                     }
                     val updatedJson = Json.encodeToString(updatedList)
                     file.writeText(updatedJson)
                     println("\uD83D\uDD04 Changes saved successfully.")
+                    log("${currentUser.username}(${currentUser.auth}) changed own password")
                 } else {
                     returnFun("❌ Passwords are not matching. Please try again...", "return to menu")
                 }
@@ -250,15 +282,37 @@ fun userPasswdChange(file: File, logUser: User): Unit {
     }
 }
 
+//endregion
+
+//region Functions
+
 fun hashPasswd(password: String): String {
     val bytes = password.toByteArray()
     val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
     return digest.joinToString("") { "%02x".format(it) }
 }
 
-fun returnFun(message: String, location: String = "continue"): Unit {
+fun returnFun(message: String, location: String = "continue") {
     println(message)
     println("[Press Enter to ${location}...]")
     readln()
     return
 }
+
+fun getTimestamp(): String {
+    val now = LocalDateTime.now()
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+    return now.format(formatter)
+}
+
+fun log(message: String) {
+    val timestamp = getTimestamp()
+    val logLine = "[$timestamp] $message \n"
+    val file = File("logs/log.txt")
+    if (!file.exists()) {
+        file.parentFile.mkdirs()
+    }
+    file.appendText(logLine)
+}
+
+//endregion
