@@ -247,30 +247,38 @@ fun userPasswdChange(file: File, currentUser: User) {
     while (true) {
         val content = file.readText()
         val user = Json.decodeFromString<List<User>>(content)
-        print("Please enter your current password:")
+        print("Please enter your current password(q to quit from the menu):")
         val currentPass = readLine()
         if (currentPass != null && currentPass.isNotBlank()) {
+            if (currentPass == "q" || currentPass == "Q") {
+                returnFun("Quitting from the menu.", "quit from menu")
+            }
             val currentPassHash = hashPasswd(currentPass)
             if (currentPassHash == currentUser.password) {
                 print("Please enter your new password:")
                 val newPassFirst = readLine()
                 if (newPassFirst != null && newPassFirst.isNotBlank()) {
-                    print("Please enter your new password again:")
-                    val newPassSec = readLine()
-                    if (newPassFirst == newPassSec) {
-                        val newPassHash = hashPasswd(newPassSec)
-                        currentUser.password = newPassHash
-                        val updatedList = user.map {
-                            if (it.username == currentUser.username) it.copy(password = newPassHash)
-                            else it
+                    if (newPassFirst.length <= 6) {
+                        print("Please enter your new password again:")
+                        val newPassSec = readLine()
+                        if (newPassFirst == newPassSec) {
+                            val newPassHash = hashPasswd(newPassSec)
+                            currentUser.password = newPassHash
+                            val updatedList = user.map {
+                                if (it.username == currentUser.username) it.copy(password = newPassHash)
+                                else it
+                            }
+                            val updatedJson = Json.encodeToString(updatedList)
+                            file.writeText(updatedJson)
+                            println("\uD83D\uDD04 Changes saved successfully.")
+                            log("${currentUser.username}(${currentUser.auth}) changed own password")
+                            break
+                        } else {
+                            returnFun("❌ Passwords are not matching. Please try again...")
+                            continue
                         }
-                        val updatedJson = Json.encodeToString(updatedList)
-                        file.writeText(updatedJson)
-                        println("\uD83D\uDD04 Changes saved successfully.")
-                        log("${currentUser.username}(${currentUser.auth}) changed own password")
-                        break
                     } else {
-                        returnFun("❌ Passwords are not matching. Please try again...")
+                        returnFun("❌ Your new password can't be shorter than 6 characters. Please try again...")
                         continue
                     }
                 } else {
