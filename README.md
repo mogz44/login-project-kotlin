@@ -28,13 +28,13 @@ A simple but robust **user login system** written in Kotlin. This console-based 
 1. Clone the repository.
 2. Open in IntelliJ IDEA or another Kotlin-compatible IDE.
 3. Make sure `kotlinx.serialization` is set up.
-4. Create a file at `data/users.json` with this content:
+4. Make sure that file at `data/users.json` with this content:
 
 ```json
 [
   {
     "username": "admin",
-    "password": "admin",
+    "password": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
     "auth": "admin"
   }
 ]
